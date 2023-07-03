@@ -4,19 +4,20 @@ from torch import nn
 class SwishNet(nn.Module):
     def __init__(self, in_channels=20, out_channels=2, width_multiply=1):
         super().__init__()
-        filter8x = 8 * width_multiply
-        filter16x = 16 * width_multiply
-        filter32x = 32 * width_multiply
+        width_8 = 8 * width_multiply
+        width_16 = 16 * width_multiply
+        width_32 = 32 * width_multiply
+        width_40 = 40 * width_multiply
 
-        self.causal_block1 = CausalBlock(in_channels, filter16x)
-        self.causal_block2 = CausalBlock(16 * width_multiply, filter8x)
-        self.causal_block3 = CausalBlock(8 * width_multiply, filter8x)
-        self.causal_conv4 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=3)
-        self.causal_conv5 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=2)
-        self.causal_conv6 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=2)
-        self.causal_conv7 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=2)
-        self.causal_conv8 = CausalGatedConv1D(8 * width_multiply, filter32x, length=3, strides=2)
-        self.conv_out = nn.Conv1d(40 * width_multiply, out_channels, kernel_size=1)
+        self.causal_block1 = CausalBlock(in_channels, width_16)
+        self.causal_block2 = CausalBlock(width_16, width_8)
+        self.causal_block3 = CausalBlock(width_8, width_8)
+        self.causal_conv4 = CausalGatedConv1D(width_8, width_16, length=3, strides=3)
+        self.causal_conv5 = CausalGatedConv1D(width_8, width_16, length=3, strides=2)
+        self.causal_conv6 = CausalGatedConv1D(width_8, width_16, length=3, strides=2)
+        self.causal_conv7 = CausalGatedConv1D(width_8, width_16, length=3, strides=2)
+        self.causal_conv8 = CausalGatedConv1D(width_8, width_32, length=3, strides=2)
+        self.conv_out = nn.Conv1d(width_40, out_channels, kernel_size=1)
         self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
         self.softmax = nn.Softmax(dim=1)
     
