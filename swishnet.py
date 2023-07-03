@@ -1,15 +1,14 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 class SwishNet(nn.Module):
-    def __init__(self, classes=2, width_multiply=1):
+    def __init__(self, in_channels=20, out_channels=2, width_multiply=1):
         super().__init__()
         filter8x = 8 * width_multiply
         filter16x = 16 * width_multiply
         filter32x = 32 * width_multiply
 
-        self.causal_block1 = CausalBlock(20, filter16x)
+        self.causal_block1 = CausalBlock(in_channels, filter16x)
         self.causal_block2 = CausalBlock(16 * width_multiply, filter8x)
         self.causal_block3 = CausalBlock(8 * width_multiply, filter8x)
         self.causal_conv4 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=3)
@@ -17,29 +16,37 @@ class SwishNet(nn.Module):
         self.causal_conv6 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=2)
         self.causal_conv7 = CausalGatedConv1D(8 * width_multiply, filter16x, length=3, strides=2)
         self.causal_conv8 = CausalGatedConv1D(8 * width_multiply, filter32x, length=3, strides=2)
-        self.conv_out = nn.Conv1d(40 * width_multiply, classes, kernel_size=1)
+        self.conv_out = nn.Conv1d(40 * width_multiply, out_channels, kernel_size=1)
         self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
         self.softmax = nn.Softmax(dim=1)
     
     def forward(self, x) -> torch.Tensor:
         # block 1
         x = self.causal_block1(x)
+        
         # block 2
         x = self.causal_block2(x)
+        
         # block 3
         x_causal = self.causal_block3(x)
+        
         x = x + x_causal
+        
         # block 4
         x_block4 = self.causal_conv4(x)
         x = x + x_block4
+        
         # block 5
         x_block5 = self.causal_conv5(x)
         x = x + x_block5
+        
         # block 6
         x_block6 = self.causal_conv6(x)
         x = x + x_block6
+        
         # block 7
         x_block7 = self.causal_conv7(x)
+        
         # block 8
         x_block8 = self.causal_conv8(x)
         
@@ -53,7 +60,7 @@ class SwishNet(nn.Module):
         return x
 
 class SwishNetWide(SwishNet):
-    def __init(classes):
+    def __init__(self, classes):
         super().__init__(classes, width_multiply=2)
 
 # NOTE: Copied from https://github.com/pytorch/pytorch/issues/1333#issuecomment-400338207
